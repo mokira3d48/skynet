@@ -1,7 +1,7 @@
-# Origin Project
+# Skynet Project
 ![](https://img.shields.io/badge/Python-3.10.12-blue)
 ![](https://img.shields.io/badge/LICENSE-MIT-%2300557f)
-![](https://img.shields.io/badge/lastest-2024--07--13-green)
+![](https://img.shields.io/badge/lastest-2024--08--31-green)
 ![](https://img.shields.io/badge/contact-dr.mokira%40gmail.com-blueviolet)
 
 <!-- ![](https://img.shields.io/badge/Django-5.0-%2344B78B) -->
@@ -30,8 +30,8 @@ Mon Projet Python est une application simple qui permet aux utilisateurs de cré
 Pour installer le projet, assurez-vous d'avoir Python 3.7 ou une version ultérieure et `pip` installés sur votre machine. Ensuite, exécutez les commandes suivantes :
 
 ```bash
-git clone https://github.com/username/mon-projet-python.git
-cd mon-projet-python
+git clone https://github.com/mokira3d48/skynet.git
+cd skynet
 pip install -r requirements.txt
 ```
 
@@ -42,7 +42,7 @@ pip install -r requirements.txt
 4. `make install` install the requirements of this package;
 5. `make dev` install the package in dev mode in virtual environment;
 6. `make test` run the unit test scripts located at `tests` directory;
-7. `mkae run` run script located at `src/package_name/__main__.py`.
+7. `mkae run` run script located at `src/skynet/__main__.py`.
 
 ### Exemple d'utilisation
 
@@ -90,7 +90,7 @@ Pour toute question ou suggestion, veuillez contacter :
 
 - **Nom** : Arnold Mokira
 - **Email** : dr.mokira@gmail.com
-- **GitHub** : [Votre Profil GitHub](https://github.com/mokira3d48)
+- **GitHub** : [Mon Profil GitHub](https://github.com/mokira3d48)
 
 ```
 
