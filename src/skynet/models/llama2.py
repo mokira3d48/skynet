@@ -4,18 +4,14 @@ from typing import Optional
 
 import torch
 import torch.nn.functional as F
-from numpy.f2py.auxfuncs import throw_error
-from sympy import expand_complex
-from sympy.physics.vector import outer
 from torch import nn
-from triton.language import dtype
-
-
-# from torch.xpu import device
 
 
 @dataclass
 class ModelArgs:
+    """
+    Model hyperparameters.
+    """
     dim: int = 4096
     n_layers: int = 32
     n_heads: int = 32  # Number of heads of the queries;
@@ -43,18 +39,16 @@ def precompute_theta_pos_frequencies(
     Returns precomputed theta position frequencies.
 
     :param head_dim:
-    :type head_dim: int
-
     :param seq_len: The max sequence length.
-    :type seq_len: int
-
     :param device:
-    :type device: str
-
     :param theta:
+
+    :type head_dim: int
+    :type seq_len: int
+    :type device: str
     :type theta: float
 
-    :return:
+    :return: a tensor with dim -> (seq_len, head_dim / 2).
     :rtype: torch.Tensor
     """
     # As written in the paper, the dimension of the embedding must be even.
@@ -96,7 +90,8 @@ def apply_rotary_embeddings(x, freq_complex, device):
     :type freq_complex: torch.Tensor
     :type device: str
 
-    :return:
+    :return: a tensor with dim -> (B, seq_len, H, head_dim)
+    :rtype: torch.Tensor
     """
     # (B, seq_len, H, head_dim) -> (B, seq_len, H, head_dim / 2)
     x_reshaped = x.float().reshape(*x.shape[:-1], -1, 2)
@@ -121,7 +116,12 @@ def apply_rotary_embeddings(x, freq_complex, device):
 
 
 class Transformer(nn.Module):
-    def __init__(self, args: ModelArgs):
+    """Definition of the transformer model
+
+    :arg args: The model Hyperparameters.
+    :type args: ModelArgs
+    """
+    def __init__(self, args):
         super().__init__()
         assert args.vocab_size != -1, "Vocab must be set"
         self.args = args
@@ -147,6 +147,18 @@ class Transformer(nn.Module):
         )
 
     def forward(self, tokens, start_pos):
+        """
+        Function of transformer computation.
+
+        :param tokens:
+        :param start_pos:
+
+        :type tokens: torch.Tensor
+        :type start_pos: int
+
+        :return:
+        :rtype: torch.Tensor
+        """
         batch_size, seq_len = tokens.shape
         assert seq_len == 1, "Only one (1) token at a time can be processed."
         h = self.tok_embeddings(tokens)  # B x seq_len x dim
