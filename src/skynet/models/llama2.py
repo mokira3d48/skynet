@@ -277,6 +277,40 @@ class SelfAttention(nn.Module):
         return output
 
 
+class FeedForward(nn.Module):
+    """
+    :arg args: The model Hyperparameters.
+    :type args: ModelArgs
+    """
+    def __init__(self, args):
+        super().__init__()
+        hidden_dim = 4 * args.dim
+        hidden_dim = int(2 * hidden_dim / 3)
+        if args.ffn_dim_multiplier is not None:
+            hidden_dim = int(args.ffn_dim_multiplier * hidden_dim)
+        # Round the `hidden_dim` to the nearest multiple
+        # of multiple_of parameter
+        hidden_dim = args.multiple_of \
+                * ((hidden_dim + args.multiple_of - 1) // args.multiple_of)
+
+        self.w1 = nn.Linear(args.dim, hidden_dim, bias=False)
+        self.w2 = nn.Linear(hidden_dim, args.dim, bias=False)
+        self.w3 = nn.Linear(args.dim, hidden_dim, bias=False)
+
+    def forward(self, x):
+        """Forward method
+
+        :param x:
+        :type x: `torch.Tensor`
+        :rtype: `torch.Tensor`
+        """
+        swish = F.silu(self.w1(x))
+        x_v = self.w3(x)
+        x = swish * x_v
+        x = self.w2(x)
+        return x
+
+
 class EncoderBlock(nn.Module):
     """
     :arg args: The model Hyperparameters.
@@ -324,7 +358,7 @@ class Transformer(nn.Module):
     """
     def __init__(self, args):
         super().__init__()
-        assert args.vocab_size != -1, "Vocab must be set"
+        assert args.vocab_size != -1, "Vocab must be set."
         self.args = args
         self.vocab_size = args.vocab_size
         self.n_layers = args.n_layers
