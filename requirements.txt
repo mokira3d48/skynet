@@ -9,4 +9,3 @@ pytest==6.2.5
 setuptools>=42
 wheel
 autopep8
-
