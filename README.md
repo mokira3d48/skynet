@@ -8,7 +8,9 @@
 <!-- ![](https://img.shields.io/badge/REST%20Framework-3.14.0-%23A30000) -->
 <!-- ![](https://img.shields.io/badge/Swagger-OpenAPI%202.0-%23aaaa00) -->
 
-Une application Python qui permet de gérer des tâches de manière efficace.
+The offline chatbot assistant project using natural language modeling
+with the LLaMa model aims to create an intelligent conversational
+interface capable of answering users' questions in a natural and contextual way. 
 
 ## Table des matières
 - [Description](#description)
@@ -23,11 +25,11 @@ Une application Python qui permet de gérer des tâches de manière efficace.
 
 ## Description
 
-Mon Projet Python est une application simple qui permet aux utilisateurs de créer, lire, mettre à jour et supprimer des tâches. Il est conçu pour être facile à utiliser et à étendre.
+Develop a virtual assistant based on the LLaMa model, which uses advances in natural language modeling to provide accurate and relevant responses to users in various contexts, whether for customer service, education, or any other domain requiring human interaction.
 
 ## Installation
 
-Pour installer le projet, assurez-vous d'avoir Python 3.7 ou une version ultérieure et `pip` installés sur votre machine. Ensuite, exécutez les commandes suivantes :
+
 
 ```bash
 git clone https://github.com/mokira3d48/skynet.git
@@ -42,33 +44,18 @@ pip install -r requirements.txt
 4. `make install` install the requirements of this package;
 5. `make dev` install the package in dev mode in virtual environment;
 6. `make test` run the unit test scripts located at `tests` directory;
-7. `mkae run` run script located at `src/skynet/__main__.py`.
+7. `make run` run script located at `src/skynet/__main__.py`.
 
 ### Exemple d'utilisation
 
-Voici un exemple de la façon d'ajouter une nouvelle tâche :
 
-```python
-from task_manager import TaskManager
-
-manager = TaskManager()
-manager.add_task("Faire les courses")
-```
 
 ## Fonctionnalités
 
-- Ajouter des tâches
-- Marquer des tâches comme complètes
-- Supprimer des tâches
-- Afficher toutes les tâches
+
 
 ## Tests
 
-Pour exécuter les tests, assurez-vous d'avoir `pytest` installé, puis exécutez :
-
-```bash
-make test  # ou pytest
-```
 
 ## Contribuer
 
@@ -91,22 +78,4 @@ Pour toute question ou suggestion, veuillez contacter :
 - **Nom** : Arnold Mokira
 - **Email** : dr.mokira@gmail.com
 - **GitHub** : [Mon Profil GitHub](https://github.com/mokira3d48)
-
-```
-
-### Explications des sections :
-
-- **Titre et description** : Le titre du projet et une brève description de ce qu'il fait.
-- **Table des matières** : Une liste de sections pour faciliter la navigation.
-- **Installation** : Instructions claires sur la façon d'installer le projet.
-- **Utilisation** : Exemples d'utilisation pour aider les utilisateurs à démarrer rapidement.
-- **Fonctionnalités** : Une liste des fonctionnalités principales du projet.
-- **Tests** : Instructions sur la façon d'exécuter les tests.
-- **Contribuer** : Un guide sur la façon de contribuer au projet.
-- **Licence** : Informations sur la licence du projet.
-- **Contact** : Informations pour contacter le développeur ou l'équipe du projet.
-```
-
-Cet exemple de `README.md` est structuré et informatif, ce qui le rend utile
-pour les utilisateurs et les contributeurs potentiels.
 

@@ -153,6 +153,15 @@ class RMSNorm(nn.Module):
         return x
 
 
+class SelfAttention(nn.Module):
+    """
+    :arg args: The model Hyperparameters.
+    :type args: ModelArgs
+    """
+    def __init__(self, args):
+        super().__init__()
+
+
 class EncoderBlock(nn.Module):
     """
     :arg args: The model Hyperparameters.
