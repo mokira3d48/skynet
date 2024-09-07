@@ -153,6 +153,45 @@ class RMSNorm(nn.Module):
         return x
 
 
+class EncoderBlock(nn.Module):
+    """
+    :arg args: The model Hyperparameters.
+    :type args: ModelArgs
+    """
+    def __init__(self, args):
+        super().__init__()
+        self.n_heads = args.n_heads
+        self.dim = args.dim
+        self.head_dim = args.dim // args.n_heads
+
+        self.attention = SelfAttention(args)
+        self.feed_forward = FeedForward(args)
+
+        # Normalization BEFORE the self attention:
+        self.attention_norm = RMSNorm(args.dim, eps=args.norm_eps)
+        # Normalization BEFORE the feed forward block:
+        self.ffm_norm = RMSNorm(args.dim, eps=args.norm_eps)
+
+    def forward(self, x, start_pos, freq_complex):
+        """
+        :param x:
+        :param start_pos:
+        :param freq_complex:
+
+        :type x: `torch.Tensor`
+        :type start_pos: `int`
+        :type freq_complex: `torch.Tensor`
+        :rtype: `torch.Tensor`
+        """
+        # (B, seq_len, dim) + (B, seq_len, dim) -> (B, seq_len, dim)
+        attn_norm = self.attention_norm(x)
+        h = x + self.attention.forward(attn_norm, start_pos, freq_complex)
+
+        h_norm = self.ffm_norm(h)
+        out = h + self.feed_forward(h_norm)
+        return out
+
+
 class Transformer(nn.Module):
     """Definition of the transformer model
 
