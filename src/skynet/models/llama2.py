@@ -112,7 +112,45 @@ def apply_rotary_embeddings(x, freq_complex, device):
     x_out = x_out.contiguous()  # make tensor contiguous;
     x_out = x_out.type_as(x)  # same type with the original tensor (x);
     x_out = x_out.to(device)  # move to device.
-    return x_out  # 1:04:13
+    return x_out
+
+
+class RMSNorm(nn.Module):
+    """Root Mean Square Layer Normalization
+
+    :arg dim:
+    :arg eps:
+
+    :type dim: `int`
+    :type eps: `float`
+    """
+    def __init__(self, dim, eps = 1e-6):
+        super().__init__()
+        self.dim = dim
+        self.eps = eps
+
+        # The gamma parameter:
+        self.weight = nn.Parameter(torch.one(dim))
+
+    def _normalize(self, x):
+        """
+        :param x:
+        :type x: `torch.Tensor`
+        :rtype `torch.Tensor`
+        """
+        # (B, seq_len, dim) * (B, seq_len, 1) -> (B, seq_len, dim)
+        # rsqrt = 1 / sqrt(x)
+        return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
+
+    def forward(self, x):
+        """
+        :param x:
+        :type `torch.Tensor`
+        :rtype: `torch.Tensor`
+        """
+        x = self._normalize(x.float()).type_as(x)
+        x = self.weight * x
+        return x
 
 
 class Transformer(nn.Module):
