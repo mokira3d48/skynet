@@ -43,10 +43,10 @@ def precompute_theta_pos_frequencies(
     :param device:
     :param theta:
 
-    :type head_dim: int
-    :type seq_len: int
-    :type device: str
-    :type theta: float
+    :type head_dim: `int`
+    :type seq_len: `int`
+    :type device: `str`
+    :type theta: `float`
 
     :return: a tensor with dim -> (seq_len, head_dim / 2).
     :rtype: torch.Tensor
@@ -88,7 +88,7 @@ def apply_rotary_embeddings(x, freq_complex, device):
 
     :type x: torch.Tensor
     :type freq_complex: torch.Tensor
-    :type device: str
+    :type device: str|`torch.device`
 
     :return: a tensor with dim -> (B, seq_len, H, head_dim)
     :rtype: torch.Tensor
@@ -113,6 +113,27 @@ def apply_rotary_embeddings(x, freq_complex, device):
     x_out = x_out.type_as(x)  # same type with the original tensor (x);
     x_out = x_out.to(device)  # move to device.
     return x_out
+
+
+def repeat_kv(x, n_rep):
+    """Function of Repeat KV
+
+    :param x: `torch.Tensor`
+    :param n_rep: `int`
+
+    :type x: `torch.Tensor`
+    :type n_rep: `int`
+    :rtype: `torch.Tensor`
+    """
+    batch_size, seq_len, n_kv_heads, head_dim = x.shape
+    if n_rep == 1:
+        return x
+
+    # (B, seq_len, n_kv_heads, 1, head_dim)
+    return (x[:, :, None, :]
+            .expand(batch_size, seq_len, n_kv_heads, n_rep, head_dim)
+            .reshape(batch_size, seq_len, (n_kv_heads * n_rep), head_dim)
+            .contiguous())
 
 
 class RMSNorm(nn.Module):
@@ -160,6 +181,100 @@ class SelfAttention(nn.Module):
     """
     def __init__(self, args):
         super().__init__()
+        # Indicates the number of heads for the queries:
+        self.n_heads_q = args.n_heads
+
+        # Indicates the number of heads for the keys and values:
+        self.n_kv_heads = args.n_heads if args.n_kv_heads is None \
+            else args.n_kv_heads
+
+        # Indicates how many times the heads of keys and values
+        # should be repeated to match the head of the queries:
+        self.n_rep = self.n_heads_q // self.n_kv_heads
+
+        # Indicates the dimension of each head:
+        self.head_dim = args.dim // args.n_heads
+
+        q_out_features = args.n_heads * self.head_dim  # H_Q * head_dim
+        kv_out_features = self.n_kv_heads * self.head_dim  # H_KV * head_dim
+        o_out_features = args.n_heads * self.head_dim  # = dim
+        self.wq = nn.Linear(args.dim, q_out_features, bias=False)
+        self.wk = nn.Linear(args.dim, kv_out_features, bias=False)
+        self.wv = nn.Linear(args.dim, kv_out_features, bias=False)
+        self.wo = nn.Linear(o_out_features, args.dim, bias=False)
+
+        zeros = torch.zeros((args.max_batch_size, args.max_seq_len,
+                             self.n_kv_heads, self.head_dim))
+        self.cache_k = zeros.clone()
+        self.cache_v = zeros.clone()
+
+    def forward(self, x, start_pos, freq_complex):
+        """
+        :param x:
+        :param start_pos:
+        :param freq_complex:
+
+        :type x: `torch.Tensor`
+        :type start_pos: `int`
+        :type freq_complex: `torch.Tensor`
+        :rtype: `torch.Tensor`
+        """
+        batch_size, seq_len, _ = x.shape  # (B, 1, dim)
+
+        # Apply the wq, wk and wv matrices to queries, keys and values:
+        xq = self.wq(x)  # (B, 1, dim) -> (B, 1, H_Q * head_dim)
+        xk = self.wk(x)  # (B, 1, dim) -> (B, 1, H_KV * head_dim)
+        xv = self.wv(x)  # (B, 1, dim) -> (B, 1, H_KV * head_dim)
+
+        # dim xq: (B, 1, H_Q * head_dim) --> (B, 1, H_Q, head_dim)
+        # dim xk: (B, 1, H_KV * head_dim) --> (B, 1, H_KV, head_dim)
+        # dim xv: (B, 1, H_KV * head_dim) --> (B, 1, H_KV, head_dim)
+        xq = xq.view(batch_size, seq_len, self.n_heads_q, self.head_dim)
+        xk = xk.view(batch_size, seq_len, self.n_kv_heads, self.head_dim)
+        xv = xv.view(batch_size, seq_len, self.n_kv_heads, self.head_dim)
+
+        xq = xq.contiguous()
+        xk = xk.contiguous()
+        xv = xv.contiguous()
+
+        xq = apply_rotary_embeddings(xq, freq_complex, device=x.device)
+        xk = apply_rotary_embeddings(xk, freq_complex, device=x.device)
+
+        # Replace the entry in the cache for this token:
+        self.cache_k[:batch_size, start_pos:(start_pos + seq_len)] = xk
+        self.cache_v[:batch_size, start_pos:(start_pos + seq_len)] = xv
+
+        # Retrieve all the cached keys and values so far
+        # (B, seq_len_kv, H_KV, head_dim)
+        keys = self.cache_k[:batch_size, 0:(start_pos + seq_len)]
+        values = self.cache_v[:batch_size, 0:(start_pos + seq_len)]
+
+        # Repeat the heads of the K and V to reach
+        # the number of heads of the queries:
+        keys = repeat_kv(keys, self.n_rep)
+        values = repeat_kv(values, self.n_rep)
+
+        # (B, 1, H_Q, head_dim) --> (B, H_Q, 1, head_dim)
+        xq = xq.transpose(1, 2).contiguous()
+        keys = keys.transpose(1, 2).contiguous()
+        values = values.transpose(1, 2).contiguous()
+
+        # (B, H_Q, 1, head_dim) @ (B, HQ, head_dim, seq_len_kv)
+        # --> (B, HQ, 1, seq_len_kv)
+        head_dim_sqrt = math.sqrt(self.head_dim)
+        scores = torch.matmul(xq, keys.transpose(2, 3)) / head_dim_sqrt
+        scores = torch.softmax(scores.float(), dim=-1).type_as(xq)
+
+        # (B, H_Q, 1, seq_len) @ (B, H_Q, seq_len_kv, head_dim)
+        # --> (B, H_Q, 1, head_dim)
+        output = torch.matmul(scores, values)
+
+        # (B, H_Q, 1, head_dim) --> (B, 1, H_Q, head_dim)
+        output = output.transpose(1, 2)
+        output = output.contiguous()
+        output = output.view(batch_size, seq_len, -1)  # --> (B, 1, dim)
+        output = self.wo(output)  # (B, 1, dim) --> (B, 1, dim)
+        return output
 
 
 class EncoderBlock(nn.Module):
