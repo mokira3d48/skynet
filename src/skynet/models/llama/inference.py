@@ -108,12 +108,12 @@ class LLaMa:
 
 
 def main():
-    """Main function"""
+    """Main function
+    """
     torch.manual_seed(0)
     allow_cuda = False
     device = 'cuda' if torch.cuda.is_available() and allow_cuda else 'cpu'
-    model = LLaMa.build(max_batch_size=3,
-                        max_seq_len=1024,
+    model = LLaMa.build(max_batch_size=3, max_seq_len=1024,
                         tokenizer_path="/home/mokira3d48/Documents/repositories/skynet/models/tokenizer.model",
                         device=device)
     print("Loading OK!")

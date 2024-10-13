@@ -6,16 +6,10 @@ from bs4 import BeautifulSoup
 def scrape_text_from_(url):
     """
     Scrap the text contained on the web page located at the URL link.
+    It returns the text extracted from the web page scrapped.
 
-    :parameter
-    ----------
-    url : str
-        L'URL de la page web à scraper.
-
-    :return
-    -------
-    str
-        Le contenu textuel extrait de la page.
+    :param url: The URL to the web page to scrape.
+    :rtype `str`
     """
     try:
         # make request to the website:
